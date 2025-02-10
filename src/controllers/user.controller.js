@@ -208,7 +208,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
-    .json(200, req.user, "current user fetched successfully");
+    .json(new ApiResponse(200, req.user, "current user fetched successfully"))
 });
 
 const updateAccountDetails = asyncHandler(async(req, res) =>{
@@ -232,7 +232,54 @@ const updateAccountDetails = asyncHandler(async(req, res) =>{
 })
 
 const updateUserAvatar = asyncHandler(async(req, res) =>{
+  const avatarLocalPath = req.file?.path
+  if(!avatarLocalPath)
+  {
+    throw new ApiError(404, "Avatra file not found")
+  }
+  const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+  if(!avatar.url){
+    throw new ApiError(400, "Error while uplaoding on cloudinary")
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set:{
+        avatar: avatar.url
+      }
+    },
+    {new: true}
+  ).select("-password")
+  return res
+  .status(200)
+  .json(new ApiResponse(200, "Avatar updated successfully"))
   
+})
+
+const updateUserCoverImage = asyncHandler(async(req, res) =>{
+  const coverImageLocalPath = req.file?.path
+  if(!coverImageLocalPath)
+  {
+    throw new ApiError(404, "CoverImage not found")
+  }
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+  if(!coverImage.url){
+    throw new ApiError(400, "Error while uplaoding on cloudinary")
+  }
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+        $set:{
+          coverImage: coverImage.url
+        }
+    },
+    {new: true }
+  ).select("-password")
+  return res
+  .status(200)
+  .json(new ApiResponse(200, "CoverImage updated successfully"))
 })
 export {
   registerUser,
@@ -242,5 +289,6 @@ export {
   changeCurrentPassword,
   getCurrentUser,
   updateAccountDetails, 
-  updateUserAvatar
+  updateUserAvatar,
+  updateUserCoverImage
 };
